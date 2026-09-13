@@ -168,7 +168,7 @@ Pro 看不到 Reward 分数、Gold 商品私有字段、raw Observation、成功
 
 ## 实验结果
 
-当前 Final-200 Clean 上新增了一次贡献者复现实验；完整协议、失败分布和产物哈希见
+当前 Final-200 Clean 上新增了一次复现实验；完整协议、失败分布和产物哈希见
 [评测更新记录](docs/evaluation-updates.md)：
 
 | 模型 | 严格成功率 | 购买成功率 | 完成终局率 | 平均 Reward |
