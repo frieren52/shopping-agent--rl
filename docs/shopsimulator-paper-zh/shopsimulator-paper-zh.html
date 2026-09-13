@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ShopSimulator 原论文中文精读</title>
+  <style>
+    :root { --ink:#28231f; --muted:#756b62; --line:#e7ded2; --paper:#fffdf9; --wash:#f5eee5; --accent:#a8472d; --accent-dark:#713322; --shadow:0 18px 55px rgba(80,47,27,.09); }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; color:var(--ink); background:var(--wash); font:16px/1.9 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",sans-serif; }
+    .site-header { position:sticky; top:0; z-index:5; border-bottom:1px solid rgba(130,91,58,.14); background:rgba(255,253,249,.9); backdrop-filter:blur(14px); }
+    .nav-shell,.page-shell { width:min(1080px,calc(100% - 36px)); margin:0 auto; }
+    .nav-shell { display:flex; justify-content:space-between; align-items:center; gap:20px; min-height:68px; }
+    .brand { color:var(--ink); font:700 18px/1.2 Georgia,"Songti SC",serif; letter-spacing:-.02em; text-decoration:none; }
+    .brand span { color:var(--accent); margin:0 2px; }
+    .header-links { display:flex; flex-wrap:wrap; gap:18px; }
+    .header-links a { color:var(--muted); font-size:13px; text-decoration:none; }
+    .header-links a:hover { color:var(--accent); }
+    .page-shell { padding:70px 0 100px; }
+    .article { max-width:820px; margin:0 auto; padding:58px clamp(24px,6vw,76px) 76px; background:var(--paper); box-shadow:var(--shadow); }
+    h1,h2,h3,h4 { color:var(--ink); font-family:Georgia,"Songti SC","STSong",serif; font-weight:700; line-height:1.28; letter-spacing:-.025em; scroll-margin-top:88px; }
+    h1 { margin:0 0 24px; font-size:clamp(34px,5vw,55px); }
+    h2 { margin:64px 0 18px; padding-top:12px; font-size:clamp(25px,3vw,33px); border-top:1px solid var(--line); }
+    h3 { margin:38px 0 10px; font-size:22px; }
+    h4 { margin:28px 0 8px; font-size:18px; }
+    p { margin:0 0 18px; }
+    a { color:var(--accent); text-underline-offset:3px; }
+    strong { color:var(--accent-dark); }
+    blockquote { margin:26px 0; padding:15px 20px; border-left:4px solid var(--accent); color:#604d3e; background:#fbf1e7; }
+    blockquote p:last-child { margin-bottom:0; }
+    pre { overflow-x:auto; margin:24px 0; padding:18px 20px; border:1px solid #eadfd2; border-radius:10px; background:#28231f; color:#f8efe5; line-height:1.65; }
+    code { padding:2px 5px; border-radius:4px; background:#f2e9df; font-size:.9em; }
+    pre code { padding:0; background:transparent; }
+    ul,ol { margin:0 0 22px; padding-left:1.5em; }
+    li + li { margin-top:5px; }
+    hr { margin:48px 0; border:0; border-top:1px solid var(--line); }
+    .table-wrap { width:100%; margin:25px 0 30px; overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { padding:10px 12px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; white-space:nowrap; }
+    th { color:var(--accent-dark); background:#fbf4eb; font-weight:700; }
+    tr:last-child td { border-bottom:0; }
+    .toc { margin:4px 0 34px; padding:12px 16px; border:1px solid var(--line); border-radius:8px; background:#fbf7f1; }
+    .toc summary { cursor:pointer; color:var(--accent-dark); font-family:Georgia,"Songti SC",serif; font-weight:700; }
+    .toc-links { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px 16px; margin-top:12px; }
+    .toc-links a { color:var(--muted); font-size:13px; line-height:1.55; text-decoration:none; }
+    .toc-links a.sub { padding-left:14px; }
+    .toc-links a:hover { color:var(--accent); }
+    .site-footer { padding:26px 0 40px; color:var(--muted); font-size:13px; text-align:center; }
+    @media (max-width:680px) {
+      .nav-shell,.page-shell { width:min(100% - 24px,1080px); }
+      .nav-shell { align-items:flex-start; flex-direction:column; justify-content:center; min-height:92px; }
+      .header-links { gap:12px; }
+      .page-shell { padding-top:28px; }
+      .article { padding:34px 20px 48px; }
+      h2 { margin-top:45px; }
+      .toc-links { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="nav-shell">
+      <a class="brand" href="shopsimulator-paper-zh.html">ShopSimulator<span>/</span>paper</a>
+      <nav class="header-links"><a href="README.md">摘要</a><a href="shopsimulator-paper-zh.md">Markdown</a><a href="original/shopsimulator-arxiv-2601.18225.pdf">英文 PDF</a><a href="https://arxiv.org/abs/2601.18225">arXiv</a></nav>
+    </div>
+  </header>
+  <main class="page-shell"><article class="article">
+    <details class="toc" open><summary>文章目录</summary><div class="toc-links" id="toc"></div></details><h1 id="shopsimulator-rl-llm-agent">ShopSimulator：面向购物助手的 RL 驱动型 LLM Agent 评测与探索</h1>
+<blockquote>
+<p>原论文：<em>ShopSimulator: Evaluating and Exploring RL-Driven LLM Agent for Shopping Assistants</em><br />
+作者：Pei Wang、Yanan Wu、Xiaoshuai Song、Weixun Wang、Gengru Chen、Zhongwen Li、Kezhong Yan、Ken Deng、Qi Liu、Shuaibing Zhao、Shaopan Xiong、Xuepeng Liu、Xuefeng Chen、Wanxi Deng、Wenbo Su、Bo Zheng（Alibaba Group）<br />
+arXiv：2601.18225v1 · DOI：<a href="https://doi.org/10.48550/arXiv.2601.18225">10.48550/arXiv.2601.18225</a><br />
+原始 PDF：<a href="original/shopsimulator-arxiv-2601.18225.pdf">本地文件</a> · <a href="https://arxiv.org/abs/2601.18225">arXiv 页面</a></p>
+</blockquote>
+<h2 id="section">阅读说明</h2>
+<p>本文是便于中文阅读和修改的<strong>章节级精读译文</strong>。它忠实保留原论文的研究问题、方法、公式、关键实验数字、结论与附录信息，并压缩了参考文献和冗长轨迹展示。表号、图号均沿用原论文，方便回到英文 PDF 核验。本文不嵌入论文图片；图表信息以文字或表格表达。</p>
+<h2 id="section-1">摘要</h2>
+<p>基于大语言模型的 Agent 正越来越多地用于电商购物。为了完成充分且面向个人的商品搜索，Agent 需要理解用户偏好、进行多轮对话，并最终从高度相似的商品中检索和辨别正确目标。然而，既有研究尚未提供一个同时覆盖这些能力的统一模拟环境，而且往往只关注评测基准，缺少训练支持。</p>
+<p>论文提出 <strong>ShopSimulator</strong>：一个大规模、高难度的中文购物环境。作者使用它评测多类 LLM，发现即使表现最好的模型，完全成功率也低于 40%。错误分析表明，Agent 在长轨迹中的深度搜索与商品选择方面表现不佳，难以恰当地利用个性化线索，也不能有效地与用户沟通。进一步的训练实验显示，监督微调（SFT）与强化学习（RL）的组合能显著改善表现，并给出如何缓解这些问题的实践依据。代码和数据发布于 <a href="https://github.com/ShopAgent-Team/ShopSimulator">https://github.com/ShopAgent-Team/ShopSimulator</a>。</p>
+<h2 id="section-2">最值得记住的数字</h2>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th style="text-align: right;">数值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>商品规模</td>
+<td style="text-align: right;">约 134 万</td>
+</tr>
+<tr>
+<td>领域数</td>
+<td style="text-align: right;">12</td>
+</tr>
+<tr>
+<td>任务总数</td>
+<td style="text-align: right;">28,147</td>
+</tr>
+<tr>
+<td>训练任务</td>
+<td style="text-align: right;">约 25K</td>
+</tr>
+<tr>
+<td>评测任务</td>
+<td style="text-align: right;">约 2.8K</td>
+</tr>
+<tr>
+<td>Catalog-Fine</td>
+<td style="text-align: right;">构建段称约 20K 商品；统计段称 24K 精标商品</td>
+</tr>
+<tr>
+<td>每个细分类目的相似商品</td>
+<td style="text-align: right;">约 120 件</td>
+</tr>
+<tr>
+<td>商品平均属性数</td>
+<td style="text-align: right;">4.53（中位数 4）</td>
+</tr>
+<tr>
+<td>商品平均规格组合数</td>
+<td style="text-align: right;">17.12（中位数 7）</td>
+</tr>
+<tr>
+<td>GPT-5 四场景平均完全成功率</td>
+<td style="text-align: right;">32.65%</td>
+</tr>
+<tr>
+<td>Qwen3-8B 基线四场景平均完全成功率</td>
+<td style="text-align: right;">12.87%</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="section-3">1. 引言</h2>
+<p>现代电商平台中，个性化、可交互的商品搜索已经成为用户体验的关键组成部分。现实用户给出的目标常常模糊、不完整，甚至在对话过程中发生变化。一个有效的购物助手不应只匹配显式查询，还要主动澄清目标，从用户画像与历史行为中推断偏好，再从大量相似商品中检索、比较并选出最合适的产品。</p>
+<p>LLM 将交互、推理和搜索统一在同一工作流中，因此很适合成为下一代购物助手。与 SFT 或 DPO 等离线方法不同，PPO、GRPO 等强化学习算法依赖 Agent 在交互环境中自主探索，再利用反馈信号迭代策略。WebShop、DeepShop 等工作已经推动了电商环境探索，但仍存在两个缺口：</p>
+<ol>
+<li>缺少一个同时覆盖个性化、多轮交互和细粒度商品辨别的统一环境。</li>
+<li>多数工作主要用于评测，对训练资源和 RL 策略探索支持不足。</li>
+</ol>
+<p>论文围绕两个研究问题展开：</p>
+<ul>
+<li><strong>RQ1：</strong> 当前 LLM Agent 在带个性化偏好与多轮交互的环境里表现如何，能否成为可靠的购物助手？</li>
+<li><strong>RQ2：</strong> 在这种环境里，哪些训练策略能把 LLM 推向更可靠的购物 Agent，尤其是 RL 相比 SFT 有何作用？</li>
+</ul>
+<p>ShopSimulator 使用真实商品和接近真实用户的特征构造中文电商沙盒。Agent 需要通过多轮对话澄清意图，搜索并浏览商品，根据属性与用户偏好推理，最终购买最合适的商品。数据包含淘宝 12 个领域的 130 多万件商品；每个细分类目都保留大量高度相似商品，迫使 Agent 先做粗粒度召回，再做细粒度辨别。</p>
+<p>用户建模方面，环境使用 LLM 扮演购物者，并为其提供包含长期偏好、人口属性和历史购买模式的详细画像。任务覆盖单轮、多轮、非个性化和个性化场景，每个任务都提供类目、属性、规格和价格等多维奖励信号。</p>
+<p>论文的主要贡献是：</p>
+<ol>
+<li>构建同时支持训练和评测的中文购物沙盒，包含大规模商品库、个性化多轮用户模型和细粒度商品区分。</li>
+<li>系统评测先进 LLM，证明它们距离可靠购物助手仍有明显差距，并通过错误分析定位薄弱环节。</li>
+<li>在 Qwen3-8B 上比较 SFT、RL 和 SFT+RL，验证 SFT 与 RL 的互补性以及严格奖励的优势，同时揭示多轮个性化任务仍然困难。</li>
+</ol>
+<h3 id="section-4">1.1 与已有购物环境的比较（原表 1）</h3>
+<table>
+<thead>
+<tr>
+<th>环境</th>
+<th>语言</th>
+<th>来源</th>
+<th style="text-align: right;">领域</th>
+<th style="text-align: right;">商品</th>
+<th style="text-align: right;">任务</th>
+<th style="text-align: center;">训练任务</th>
+<th style="text-align: center;">单轮</th>
+<th style="text-align: center;">多轮</th>
+<th style="text-align: center;">个性化</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WebShop</td>
+<td>英文</td>
+<td>Amazon</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">118 万</td>
+<td style="text-align: right;">12,087</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+</tr>
+<tr>
+<td>DeepShop</td>
+<td>英文</td>
+<td>Amazon</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">动态</td>
+<td style="text-align: right;">600</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+</tr>
+<tr>
+<td>ChatShop</td>
+<td>英文</td>
+<td>Amazon</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">118 万</td>
+<td style="text-align: right;">1,500</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+</tr>
+<tr>
+<td>WebMall</td>
+<td>英文</td>
+<td>WooCommerce</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">4,400</td>
+<td style="text-align: right;">91</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+</tr>
+<tr>
+<td>ShoppingBench</td>
+<td>英文</td>
+<td>Lazada</td>
+<td style="text-align: right;">21</td>
+<td style="text-align: right;">250 万</td>
+<td style="text-align: right;">3,310</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+</tr>
+<tr>
+<td><strong>ShopSimulator</strong></td>
+<td><strong>中文</strong></td>
+<td><strong>淘宝</strong></td>
+<td style="text-align: right;"><strong>12</strong></td>
+<td style="text-align: right;"><strong>134 万</strong></td>
+<td style="text-align: right;"><strong>28,147</strong></td>
+<td style="text-align: center;"><strong>✓</strong></td>
+<td style="text-align: center;"><strong>✓</strong></td>
+<td style="text-align: center;"><strong>✓</strong></td>
+<td style="text-align: center;"><strong>✓</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="shopsimulator">2. ShopSimulator</h2>
+<h3 id="section-5">2.1 任务形式化</h3>
+<p>WebShop 一类环境把购物建模为序列决策过程。Agent 在文本购物界面中完成一个固定、明确的目标 <code>G</code>。时刻 <code>t</code>，策略 <code>πθ</code> 根据当前观察 <code>o_t</code> 和目标生成动作 <code>a_t</code>，环境 <code>E</code> 再返回下一观察：</p>
+<pre><code class="language-text">a_t = πθ(o_t, G)
+o_(t+1) = E(o_t, a_t)
+</code></pre>
+<p>动作包括文本检索、浏览搜索结果、查看商品详情和购买。完成购买或达到最大步数后，当前 episode 结束。</p>
+<p>ShopSimulator 在此基础上增加三项能力：</p>
+<ol>
+<li><strong>多轮交互：</strong> LLM 模拟的用户只逐步透露信息，Agent 必须主动澄清不充分或含糊的目标。</li>
+<li><strong>个性化：</strong> 策略可访问结构化用户画像及历史行为，需要把偏好纳入搜索和选择。</li>
+<li><strong>细粒度商品辨别：</strong> 每个最小子类约有 120 件高度相似商品，不能依靠随机命中。</li>
+</ol>
+<p>多轮、个性化设置下，策略还依赖当前用户话语 <code>u_t</code> 与静态画像 <code>p</code>：</p>
+<pre><code class="language-text">a_t = πθ(o_t, u_t, p)
+o_(t+1), u_(t+1) = E(o_t, a_t)
+</code></pre>
+<p>多轮模式把“直接向用户提问”纳入动作空间；个性化模式提供画像 <code>p</code>。环境也保留不带画像的单轮与多轮场景。</p>
+<h3 id="section-6">2.2 环境构建</h3>
+<p>构建流程包括三阶段：商品目录收集、任务生成和用户建模。</p>
+<h4 id="section-7">商品目录</h4>
+<p>作者在获得平台授权的前提下，使用 <strong>2025 年 6 月淘宝快照</strong>。先按曝光频率选出 5,000 万件高频商品，再移除子类过少的一级类目。GPT-4o 用于判断类目复杂度与类内多样性：低复杂度类目被剔除，低多样性类目被降采样。</p>
+<p>为了保证细粒度辨别，每个子类保留约 120 件高频且相似的商品，形成约 2 万件商品的高质量集合 <strong>Catalog-Fine</strong>。之后从其余合格商品中再抽取约 130 万件，形成覆盖更广的 <strong>Catalog-Full</strong>。</p>
+<h4 id="section-8">任务构造</h4>
+<p>每条自然语言购买指令与整个目录中的唯一商品一一对应。标注者根据商品标题、类目、店铺、规格、属性和价格撰写指令，但不能直接照抄标题或核心关键词，而要使用同义词、描述性短语、风格表达或日常说法。最后再检查是否存在另一件相似商品也能完整满足指令。</p>
+<p>Catalog-Fine 最终构造约 24K 个任务。只有“非个性化单轮”场景把完整指令直接作为用户输入；多轮场景的目标会由用户与 Agent 在多次交互中共同表达。</p>
+<h4 id="section-9">个性化</h4>
+<p>个性化任务给每条任务增加结构化用户画像，包括年龄、性别、消费层级、品牌偏好等用户信息与长期偏好。画像里的长期需求会从指令中移除，只保留颜色等本次商品特有线索，避免 Agent 只从对话文本中推回完整要求。</p>
+<p>因为真实画像涉及隐私，作者先由 LLM 生成画像草稿，再由人工审核、修改和丰富，同时避免画像对目标商品过拟合。特别具体的属性仍保留在任务指令中。最终得到 <strong>4,726 个个性化用户画像及相应改写指令</strong>。</p>
+<h4 id="section-10">多轮交互</h4>
+<p>LLM 模拟的购物者一开始只表达模糊意图，只有在 Agent 提问后才逐步透露必要属性。若 Agent 在信息不完整时准备购买，购物者应拒绝。该设置要求 Agent 主动发现并补齐信息缺口，然后才能购买。</p>
+<h3 id="section-11">2.3 奖励</h3>
+<p>若只在全部条件满足时给 1、否则给 0，学习信号会过于稀疏。论文因此同时定义宽松加法奖励与严格乘法奖励。</p>
+<p>设目标要求包括类目 <code>U_cat</code>、属性集合 <code>U_att</code>、规格集合 <code>U_opt</code> 和价格上限 <code>U_price</code>；购买商品对应 <code>Y_cat</code>、<code>Y_att</code>、<code>Y_opt</code> 和 <code>Y_price</code>。</p>
+<h4 id="section-12">宽松加法奖励</h4>
+<p>在类目软匹配分数 <code>R_cat</code> 的基础上，对属性、规格和价格的满足情况取平均：</p>
+<pre><code class="language-text">R_loose = R_cat ×
+          (|U_att ∩ Y_att| + |U_opt ∩ Y_opt| + 1[Y_price ≤ U_price])
+          / (|U_att| + |U_opt| + 1)
+</code></pre>
+<p>它允许不同维度相互补偿：某项不满足，其他项得分仍可能把总分抬高。</p>
+<h4 id="section-13">严格乘法奖励</h4>
+<p>严格奖励采用“短板式”乘法：</p>
+<pre><code class="language-text">R_strict = R_cat
+           × |U_att ∩ Y_att| / |U_att|
+           × |U_opt ∩ Y_opt| / |U_opt|
+           × 1[Y_price ≤ U_price]
+</code></pre>
+<p>任一必要维度为 0，总分都会显著降低或归零，因此更强调完整满足全部约束。</p>
+<h4 id="section-14">完全成功率</h4>
+<p>评测还报告 <code>R_succ</code>：一次 episode 只有在购买商品的所有必需维度都与目标完全一致时记为 1，否则为 0。它衡量“完整成功”，不能由部分匹配补偿。</p>
+<h3 id="section-15">2.4 数据统计</h3>
+<p>环境覆盖四种场景：</p>
+<ol>
+<li>单轮（Single-Turn）</li>
+<li>多轮（Multi-Turn）</li>
+<li>个性化单轮（Single-Turn &amp; Pers）</li>
+<li>个性化多轮（Multi-Turn &amp; Pers）</li>
+</ol>
+<p>28K 任务进一步划分为训练集和评测集。Catalog-Fine 覆盖所有任务所需目标商品。由于 Catalog-Full 带来更高资源消耗和延迟，论文后续训练与评测实验统一使用 Catalog-Fine。</p>
+<p>12 个领域分别为：家居生活、工业与农资、休闲娱乐与教育、运动户外与出行、美妆个护与健康、家电与电子、食品饮料、服装鞋饰、母婴儿童、本地与综合服务、在线服务与数字商品、二手与拍卖。</p>
+<hr />
+<h2 id="section-16">3. 评测</h2>
+<h3 id="section-17">3.1 设置</h3>
+<ul>
+<li>单轮任务最大动作数：30。</li>
+<li>多轮任务最大动作数：40。</li>
+<li>多轮购物者模型：Qwen3-225B-A22B。</li>
+<li>指标：<code>R_loose</code>、<code>R_strict</code> 和完全成功率 <code>R_succ</code>。</li>
+</ul>
+<h3 id="section-18">3.2 主要结果（原表 2）</h3>
+<p>下表保留最便于比较的 <code>R_succ</code>；完整表还报告宽松和严格奖励。</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th style="text-align: right;">单轮</th>
+<th style="text-align: right;">个性化单轮</th>
+<th style="text-align: right;">多轮</th>
+<th style="text-align: right;">个性化多轮</th>
+<th style="text-align: right;">四场景平均</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPT-5</td>
+<td style="text-align: right;">40.78</td>
+<td style="text-align: right;">36.41</td>
+<td style="text-align: right;">29.29</td>
+<td style="text-align: right;">24.13</td>
+<td style="text-align: right;"><strong>32.65</strong></td>
+</tr>
+<tr>
+<td>OpenAI o3</td>
+<td style="text-align: right;">33.72</td>
+<td style="text-align: right;">26.73</td>
+<td style="text-align: right;">31.19</td>
+<td style="text-align: right;">22.31</td>
+<td style="text-align: right;">28.48</td>
+</tr>
+<tr>
+<td>GPT-4.1</td>
+<td style="text-align: right;">29.13</td>
+<td style="text-align: right;">27.85</td>
+<td style="text-align: right;">23.17</td>
+<td style="text-align: right;">23.83</td>
+<td style="text-align: right;">25.99</td>
+</tr>
+<tr>
+<td>Claude-4-Sonnet</td>
+<td style="text-align: right;">30.29</td>
+<td style="text-align: right;">32.17</td>
+<td style="text-align: right;"><strong>38.25</strong></td>
+<td style="text-align: right;">25.39</td>
+<td style="text-align: right;">31.52</td>
+</tr>
+<tr>
+<td>Gemini 2.5 Pro</td>
+<td style="text-align: right;">29.24</td>
+<td style="text-align: right;">32.76</td>
+<td style="text-align: right;">29.10</td>
+<td style="text-align: right;">27.13</td>
+<td style="text-align: right;">29.55</td>
+</tr>
+<tr>
+<td>DeepSeek-R1</td>
+<td style="text-align: right;">25.27</td>
+<td style="text-align: right;">29.19</td>
+<td style="text-align: right;">29.27</td>
+<td style="text-align: right;"><strong>30.30</strong></td>
+<td style="text-align: right;">28.51</td>
+</tr>
+<tr>
+<td>DeepSeek-V3.1</td>
+<td style="text-align: right;">31.86</td>
+<td style="text-align: right;">35.69</td>
+<td style="text-align: right;">31.62</td>
+<td style="text-align: right;">28.07</td>
+<td style="text-align: right;"><strong>31.81</strong></td>
+</tr>
+<tr>
+<td>Qwen3-235B-A22B</td>
+<td style="text-align: right;">27.96</td>
+<td style="text-align: right;">26.81</td>
+<td style="text-align: right;">24.29</td>
+<td style="text-align: right;">23.60</td>
+<td style="text-align: right;">25.66</td>
+</tr>
+<tr>
+<td>Qwen3-30B-A3B</td>
+<td style="text-align: right;">20.88</td>
+<td style="text-align: right;">22.84</td>
+<td style="text-align: right;">10.04</td>
+<td style="text-align: right;">17.18</td>
+<td style="text-align: right;">17.73</td>
+</tr>
+<tr>
+<td>Qwen3-32B</td>
+<td style="text-align: right;">19.67</td>
+<td style="text-align: right;">23.99</td>
+<td style="text-align: right;">3.67</td>
+<td style="text-align: right;">14.36</td>
+<td style="text-align: right;">15.42</td>
+</tr>
+<tr>
+<td>Qwen3-8B</td>
+<td style="text-align: right;">14.13</td>
+<td style="text-align: right;">17.24</td>
+<td style="text-align: right;">6.48</td>
+<td style="text-align: right;">13.63</td>
+<td style="text-align: right;">12.87</td>
+</tr>
+</tbody>
+</table>
+<p>数字单位为百分比。闭源模型中 GPT-5 的总体成功率最高；开源模型中 DeepSeek-V3.1 的总体成功率最高。</p>
+<h4 id="section-19">总体观察</h4>
+<p>所有模型的完全成功率都较低。即使 GPT-5 的四场景平均 <code>R_succ</code> 也只有 32.65%。<code>R_loose</code> 普遍远高于 <code>R_strict</code> 和 <code>R_succ</code>，说明许多推荐只满足类目或部分属性，却没有满足全部细粒度要求。</p>
+<h4 id="section-20">多轮任务</h4>
+<p>模型在多轮环境中普遍退化，说明它们难以在长上下文中持续追踪状态、主动澄清并理解不断补充的意图。小模型退化更明显：Qwen3-8B 从单轮到多轮时，严格奖励下降约 47%，成功率下降约 50%；Qwen3-235B-A22B 的相应降幅约为 13% 和 14%。</p>
+<p>把个性化单轮与非个性化多轮相比，多数模型，尤其是小模型，在前者表现更好。这说明持续澄清比读取静态偏好约束更困难。</p>
+<h4 id="section-21">个性化</h4>
+<p>加入个性化信息并不总会提升表现。它一方面能提前缩小搜索空间、减少重复澄清和无效探索，另一方面也会增加上下文噪声；模型可能把偏好误当成硬约束。真正困难的是平衡“充分利用”和“不过度解读”。</p>
+<h3 id="section-22">3.3 错误分析</h3>
+<p>作者从 Claude-4-Sonnet 的失败轨迹中人工归纳错误类型，再使用 GPT-5 对全部轨迹分类。</p>
+<h4 id="section-23">动作层错误</h4>
+<ul>
+<li><strong>搜索：</strong> 忽略关键属性 15.04%，放弃高匹配结果 8.74%，重复相似查询 8.67%。</li>
+<li><strong>点击：</strong> 违反硬约束 12.25%，未确认关键属性 2.74%，点击不存在按钮 2.35%，重试已被拒绝的属性 0.80%。</li>
+<li><strong>购买：</strong> 45.63% 的错误来自未确认重要细节就购买，31.31% 来自用户拒绝后仍购买；两者合计接近 80%。</li>
+<li><strong>询问用户：</strong> 信息缺失却不询问占 9.40%，重复确认已知信息占 2.40%，用户已告别仍继续询问占 0.70%。</li>
+</ul>
+<p>总体上，Agent 会在检索时忽略关键属性或浪费已有候选，在商品选择时弱化硬约束，在购买前缺少确认，导致成功率下降且轨迹变长。</p>
+<h4 id="section-24">个性化错误</h4>
+<ul>
+<li>未充分利用画像信息：55.82%。</li>
+<li>过度解读画像信息：35.71%。</li>
+<li>混淆本次短期目标与长期偏好：8.79%。</li>
+</ul>
+<p>个性化失败的根源不是单纯“画像用得少”，而是模型没有正确区分显式硬约束、当前意图和长期软偏好。</p>
+<h4 id="section-25">模拟购物者错误</h4>
+<p>购物者侧错误总体低于 8%。其中包括额外增加意图 3.69%、扭曲目标意图 2.93%、不回答关键目标 0.43%。因此，整体低成功率的首要原因仍在 Agent 侧。</p>
+<hr />
+<h2 id="section-26">4. 强化学习探索</h2>
+<h3 id="section-27">4.1 训练设置</h3>
+<p>作者针对四种场景分别训练 Qwen3-8B，比较两条路线：</p>
+<ol>
+<li>直接在 Qwen3-8B 上做 RL。</li>
+<li>先用 SFT 冷启动，再做 RL。</li>
+</ol>
+<p>SFT 数据来自 GPT-4.1 在训练集上产生的 6K 条成功轨迹。RL 使用 ROLL 框架和 GRPO 算法，分别尝试 <code>R_loose</code> 与 <code>R_strict</code>。详细超参数见附录 D：</p>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>设置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SFT 基座</td>
+<td>Qwen3-8B</td>
+</tr>
+<tr>
+<td>SFT 数据</td>
+<td>GPT-4.1 的 6K 条成功轨迹</td>
+</tr>
+<tr>
+<td>SFT batch size</td>
+<td>32</td>
+</tr>
+<tr>
+<td>SFT 学习率</td>
+<td>1×10⁻⁵</td>
+</tr>
+<tr>
+<td>SFT epoch</td>
+<td>4</td>
+</tr>
+<tr>
+<td>RL 框架 / 算法</td>
+<td>ROLL / GRPO</td>
+</tr>
+<tr>
+<td>RL KL loss</td>
+<td>省略，以鼓励探索</td>
+</tr>
+<tr>
+<td>最大上下文</td>
+<td>32K tokens</td>
+</tr>
+<tr>
+<td>RL 学习率</td>
+<td>1×10⁻⁶</td>
+</tr>
+<tr>
+<td>RL 总步数</td>
+<td>200</td>
+</tr>
+<tr>
+<td>每步采样</td>
+<td>32 个样本，每个样本 8 条轨迹 rollout</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-28">4.2 训练结果（原表 3）</h3>
+<p>以下为完全成功率 <code>R_succ</code>：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th style="text-align: right;">基线</th>
+<th style="text-align: right;">SFT</th>
+<th style="text-align: right;">RL + 宽松奖励</th>
+<th style="text-align: right;">RL + 严格奖励</th>
+<th style="text-align: right;">SFT + RL + 严格奖励</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>单轮</td>
+<td style="text-align: right;">14.13</td>
+<td style="text-align: right;">32.47</td>
+<td style="text-align: right;">28.07</td>
+<td style="text-align: right;">30.19</td>
+<td style="text-align: right;"><strong>38.89</strong></td>
+</tr>
+<tr>
+<td>多轮</td>
+<td style="text-align: right;">6.48</td>
+<td style="text-align: right;">29.27</td>
+<td style="text-align: right;">18.64</td>
+<td style="text-align: right;">22.32</td>
+<td style="text-align: right;"><strong>35.50</strong></td>
+</tr>
+<tr>
+<td>个性化单轮</td>
+<td style="text-align: right;">17.24</td>
+<td style="text-align: right;">30.98</td>
+<td style="text-align: right;">32.98</td>
+<td style="text-align: right;">38.37</td>
+<td style="text-align: right;"><strong>57.33</strong></td>
+</tr>
+<tr>
+<td>个性化多轮</td>
+<td style="text-align: right;">13.63</td>
+<td style="text-align: right;">30.49</td>
+<td style="text-align: right;">28.44</td>
+<td style="text-align: right;">28.29</td>
+<td style="text-align: right;"><strong>34.35</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="sft-rl">SFT 与 RL 的分工</h4>
+<p>所有训练方法都显著优于基线，且 <strong>SFT + RL + <code>R_strict</code></strong> 在四类场景均最优。提升主要来自属性和规格匹配改善。</p>
+<p>没有工作流先验时，RL 很难自主探索，尤其是在多轮任务中。SFT 可以直接模仿成功轨迹，因此单独 SFT 在非个性化单轮和多轮上优于单独 RL。与此同时，SFT 容易继承教师模型较长的成功轨迹；RL 自主探索出的轨迹往往更短、更简洁。</p>
+<p>SFT 更擅长学习任务流程和动作模式，RL 则能通过多次 rollout 发现并优化个性化偏好。加入个性化后，RL 与 SFT 的差距缩小；在个性化单轮中，单独严格 RL 的成功率甚至比 SFT 高 7.39 个百分点（论文正文用严格奖励综合分比较时报告 +8.25%）。这解释了为什么先 SFT 冷启动、再用 RL 优化效果最好：前者降低探索难度，后者补足偏好理解和细粒度匹配。</p>
+<h4 id="section-29">严格奖励优于宽松奖励</h4>
+<p>四个场景中，以 <code>R_strict</code> 作为 RL 目标都比 <code>R_loose</code> 更有利于总体匹配和成功率。乘法奖励会把注意力集中到属性、规格等最弱维度；加法奖励则更容易鼓励覆盖面或“完成动作”，但不够强调最终准确性。</p>
+<h4 id="section-30">场景差异</h4>
+<p>单轮和个性化单轮的训练收益更大，因为模型较容易学习完整执行流程并利用静态画像。多轮和个性化多轮要求模型在长轨迹中协调画像理解、澄清对话与环境动作。即使训练后，成功率仍只有约 35%。</p>
+<hr />
+<h2 id="section-31">5. 相关工作</h2>
+<h3 id="llm-agent">5.1 电商 LLM Agent 评测</h3>
+<p>部分工作评测 LLM 的电商概念知识和推理能力，另一些工作评测模型模拟用户行为的能力。ShopSimulator 关注的是：LLM 能否在环境中综合完成完整购物任务。</p>
+<p>WebShop 首先建立了购物交互环境；ChatShop、DeepShop、WebMall 和 ShoppingBench 分别扩展到多轮对话、深度商品搜索、跨店浏览和优惠券使用。但这些环境主要依赖英文商品语料，且通常缺少个性化或训练支持。ShopSimulator 的区别是提供大规模中文电商沙盒，并同时支持个性化、多轮和训练。</p>
+<h3 id="llm-agent-1">5.2 电商 LLM Agent 训练</h3>
+<p>相关路线包括领域适配、对话式多 Agent 推荐、多模态购物客服、将 LLM 接入推荐管线，以及通过 RL 模拟人类购物行为。ShopSimulator 提供大量训练任务与多维奖励信号，论文则系统比较了 SFT、RL 以及 SFT 冷启动后再做 RL 的效果。</p>
+<hr />
+<h2 id="section-32">6. 结论</h2>
+<p>ShopSimulator 把大规模真实商品目录、多轮个性化用户模型、评测任务和训练支持统一到一个中文购物沙盒中。评测显示，即使强 LLM 也远未达到可靠购物助手的水平。主要失败来自细粒度属性/规格 grounding 不足以及不理想的交互行为。SFT 与 RL 的组合可以部分缓解这些问题，但多轮个性化仍是明显短板。</p>
+<hr />
+<h2 id="section-33">7. 局限</h2>
+<ol>
+<li>用户画像是 LLM 合成并经人工修订的，分布可能偏离真实用户。</li>
+<li>RL 实验虽然覆盖多种场景与设置，但主要使用 GRPO，未系统比较更新的 RL 算法。</li>
+<li>环境只处理文本交互，没有纳入真实电商中的商品图片和视频。</li>
+</ol>
+<hr />
+<h2 id="section-34">8. 伦理声明与潜在风险</h2>
+<h3 id="section-35">伦理声明</h3>
+<ul>
+<li>商品数据经电商平台授权收集，遵守当地法律与平台政策，不包含个人隐私信息。</li>
+<li>中文标注者均为中文母语者，至少拥有本科学历；报酬根据任务耗时和难度制定，高于当地最低工资要求。标注过程在线完成，不涉及身心伤害。</li>
+</ul>
+<h3 id="section-36">潜在风险</h3>
+<ul>
+<li>商品目录来自 2025 年 6 月快照，可能带有时间和平台特定分布，分布变化时表现可能不均衡。</li>
+<li>合成画像可能包含偏见或不完整偏好，导致不同用户群体上的表现不均衡。</li>
+<li>指令依赖人工撰写与审核，主观差异和一致性漂移可能产生轻微标签噪声。</li>
+</ul>
+<hr />
+<h2 id="section-37">9. 附录要点</h2>
+<h3 id="agent-7">9.1 Agent 系统提示词的核心约束（原图 7）</h3>
+<p>Agent 被要求：</p>
+<ul>
+<li>收集商品类型、预算、属性偏好和规格需求。</li>
+<li>使用 <code>search[keyword]</code> 与 <code>click[value]</code> 和环境交互。</li>
+<li>购买前选择好规格，并确认商品完整满足用户需求。</li>
+<li>信息缺失时先提问；信息充分时才操作环境；每轮只能执行一个动作。</li>
+<li><code>click[buy now]</code> 表示立即购买，不是进入结算页。</li>
+<li>点击值必须来自当前页面可用按钮。</li>
+<li>若用户拒绝或提出新信息，不得购买。</li>
+</ul>
+<p>原始提示词还带有“对话结束前必须购买当前最合适商品”等强制终止规则。这类规则能提高完成率，却也可能诱发论文错误分析中观察到的草率购买，需要结合严格确认机制理解。</p>
+<h3 id="section-38">9.2 模拟购物者提示词（原图 8）</h3>
+<p>模拟购物者持有一个仅自己知道的具体目标，一开始只给模糊意图；它应自然回答 Agent 的问题，不主动一次性透露全部细节。购买前若仍有信息未传达，购物者应拒绝并给出简单理由，等待 Agent 继续询问。</p>
+<h3 id="section-39">9.3 商品、任务与画像示例（原图 9–11）</h3>
+<p>论文使用一双 YONEX 羽毛球鞋示范三者如何对齐：</p>
+<ul>
+<li>商品包含真假保障、减震、耐磨、男女同款等属性，以及白蓝配色、40 码等规格，价格 528 元。</li>
+<li>任务用自然语言要求宽楦、正品、减震耐磨、白蓝、男女同款、40 码和 550 元预算。</li>
+<li>个性化画像进一步提供 YONEX 高品牌偏好、40 码、蓝白色、运动消费倾向以及近期搜索行为。</li>
+</ul>
+<h3 id="section-40">9.4 三类轨迹示例（原图 12–16）</h3>
+<ul>
+<li><strong>单轮：</strong> 用户一次给出完整条件。Agent 搜索、打开 YONEX 商品、选择白蓝配色和 40 码，然后购买。</li>
+<li><strong>多轮：</strong> 用户逐次补充预算、尺码、蓝白配色、宽楦、男女同款和精确型号。Agent 多次搜索和确认后购买目标商品。</li>
+<li><strong>个性化多轮：</strong> 初始观察包含结构化画像。Agent 从品牌、尺码、价格区间、功能与近期搜索中推断软偏好，再结合用户当前话语执行搜索。</li>
+</ul>
+<p>这些示例说明：同一个商品目标可被改写成不同信息披露方式，从而分别测试固定指令执行、主动澄清和画像利用。</p>
+<h3 id="c.3">9.5 奖励分量的计算细节（附录 C.3）</h3>
+<ul>
+<li><strong>类目分量：</strong> 检查初始查询是否相同、类目路径是否至少共享两个节点、标题关键词重叠率是否超过 0.2。任一条件满足时系数为 1.0；否则为 0.5，标题相似度低于 0.1 或为 0 时进一步降为 0.1 或 0。</li>
+<li><strong>属性分量：</strong> 计算目标语义属性中有多少能在商品属性中匹配；使用模糊字符串匹配，若属性列表中找不到，还会检查标题与详情描述。</li>
+<li><strong>规格分量：</strong> 用模糊匹配计算颜色、尺码、容量等目标规格的满足比例。</li>
+<li><strong>价格分量：</strong> 商品价格不超过预算上限记 1，否则记 0。</li>
+</ul>
+<hr />
+<h2 id="section-41">10. 对本项目的直接启示</h2>
+<ol>
+<li><strong>不要把“完成购买动作”当作成功。</strong> 必须区分终止、类目匹配、属性匹配、规格匹配、价格满足和完整成功。</li>
+<li><strong>SFT 先教流程，RL 再调策略。</strong> 对工具协议复杂、搜索空间大的购物 Agent，直接 RL 的探索成本很高。</li>
+<li><strong>Reward 要保护短板。</strong> 可被其他维度补偿的加法奖励容易掩盖严重失误；关键硬约束需要不可补偿的门控或乘法结构。</li>
+<li><strong>购买前核验是独立能力。</strong> “找到候选”不等于“选对规格”，更不等于“可以购买”。</li>
+<li><strong>多轮需要专门设计。</strong> 单轮提升不能直接外推到多轮；状态记忆、澄清策略、用户拒绝后的回退都需要单独评测。</li>
+<li><strong>画像应分成硬约束与软偏好。</strong> 当前明确要求优先于长期偏好，避免过度个性化。</li>
+</ol>
+<blockquote>
+<p>注意：本仓库当前采用自己的 ShopSimulator Environment v2.1、Reward v3、observation v2 与 tool schema v2。论文结果用于理解上游方法，不能与本仓库的单轮 Final-200 指标直接横比。</p>
+</blockquote>
+  </article></main>
+  <footer class="site-footer">中文章节级精读 · 数据与结论以 arXiv:2601.18225v1 为准</footer>
+  <script>
+    const slug = s => s.trim().toLowerCase().replace(/[\s\/]+/g,'-').replace(/[^\p{L}\p{N}\-]/gu,'').replace(/-+/g,'-');
+    const toc = document.getElementById('toc');
+    document.querySelectorAll('.article h2, .article h3').forEach((h,i) => {
+      h.id = h.id || slug(h.textContent) || `section-${i+1}`;
+      const a = document.createElement('a');
+      a.href = `#${h.id}`; a.textContent = h.textContent;
+      if (h.tagName === 'H3') a.className = 'sub';
+      toc.appendChild(a);
+    });
+    document.querySelectorAll('.article table').forEach(table => {
+      const wrap = document.createElement('div'); wrap.className='table-wrap';
+      table.parentNode.insertBefore(wrap, table); wrap.appendChild(table);
+    });
+  </script>
+</body>
+</html>
