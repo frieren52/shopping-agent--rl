@@ -420,7 +420,3 @@ bash scripts/grpo.sh --logger swanlab
 [VitaBench: Benchmarking LLM Agents with Versatile Interactive Tasks in Real-world Applications](https://arxiv.org/pdf/2509.26490)
 以及
 [EComAgentBench: Benchmarking Shopping Agents on Long-Horizon Tasks with Distributed Hidden Intent](https://arxiv.org/pdf/2606.17698)。
-
-仓库结构和教程呈现参考了
-[qiqihezh/agentic-grpo-longhorizon](https://github.com/qiqihezh/agentic-grpo-longhorizon)。
-感谢 [OpenCode Go 套餐](https://dev.opencode.ai/go) 对开发工作的支持。
